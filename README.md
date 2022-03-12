@@ -1,1 +1,1 @@
-# MobilityDB-CitusCon22-Demo
+# MobilityDB-CitusCon2022-Demo

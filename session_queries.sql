@@ -20,33 +20,13 @@ CREATE INDEX trips_dist_trip_gist_idx on trips_dist USING gist(trip);
 CREATE INDEX trips_dist_trip_spgist_idx on trips_dist USING spgist(trip);
 
 -- Create the referrence tables
-CREATE TABLE communes_ref (LIKE communes);
-INSERT INTO communes_ref SELECT * FROM communes;
-SELECT create_reference_table('communes_ref');
+CREATE TABLE municipalities_ref (LIKE municipalities);
+INSERT INTO municipalities_ref SELECT * FROM municipalities;
+SELECT create_reference_table('municipalities_ref');
 
-CREATE TABLE Querypoints_ref (LIKE Querypoints INCLUDING ALL);
-INSERT INTO Querypoints_ref SELECT * FROM Querypoints;
-SELECT create_reference_table('Querypoints_ref');
-
-------------------------------------------------------------------------------------------------------------------------------------------------------
--- Partitions Summary
-------------------------------------------------------------------------------------------------------------------------------------------------------
---Query Text: Total number of trips per partition
-
---SQL:
-SELECT *
-FROM run_command_on_shards('trips_dist', $cmd$
-   SELECT count(*) trips_count FROM %1$s
-$cmd$); 
-
-
---Query Text: Total number of instants per partition
-
---SQL:
-SELECT *
-FROM run_command_on_shards('trips_dist', $cmd$
-   SELECT sum(numinstants(trip)) Instants FROM %1$s
-$cmd$);  
+CREATE TABLE poi_ref (LIKE poi INCLUDING ALL);
+INSERT INTO poi_ref SELECT * FROM poi;
+SELECT create_reference_table('poi_ref');
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Number of trips and the total number of points per trip:
@@ -55,54 +35,53 @@ SELECT count(*) numTrajs, sum(numinstants(trip)) numPoints
 FROM trips_dist;
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
--- Temporal Range Query: Find trips that overlap a given query range.
+-- Temporal Range Query: Which vehicle trips took place during a specific time frame?
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 SELECT distinct vehicle 
 FROM trips_dist
-WHERE trip && period '[2020-06-03, 2020-06-05)';
+WHERE trip && period ('2020-06-03', '2020-06-05');
 
 --Query Plan:
 EXPLAIN 
 SELECT distinct vehicle 
 FROM trips_dist
-WHERE trip && period '[2020-06-03, 2020-06-05)';
+WHERE trip && period ('2020-06-03', '2020-06-05');
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
--- Spatial Range Query: Find trips that overlap a given region.
+-- Spatial Range Query: Which vehicle trips passed in the municipality of Evere
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
 SELECT distinct vehicle
 FROM trips_dist
 WHERE intersects(trip, 'SRID=3857;POLYGON((481332.4856234445 6586813.81152605,481332.4856234445 6588687.81152605,483206.4856234445 6588687.81152605,483206.4856234445 6586813.81152605,481332.4856234445 6586813.81152605))'::geometry);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
--- Spatiotemporal Range Query: Find trips that overlap a given region during a specific period.
+-- Spatiotemporal Range Query: Which vehicle trips passed in the municipality of Evere during a specific period.
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
 SELECT distinct vehicle
 FROM trips_dist
 WHERE intersects(trip, 'SRID=3857;POLYGON((481332.4856234445 6586813.81152605,481332.4856234445 6588687.81152605,483206.4856234445 6588687.81152605,483206.4856234445 6586813.81152605,481332.4856234445 6586813.81152605))'::geometry);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
--- Broadcast-Join Query
-------------------------------------------------------------------------------------------------------------------------------------------------------SELECT DISTINCT P.Id, P.geom
-FROM Trips_dist T, (SELECT * FROM Querypoints_ref  order by id desc LIMIT 5) P
-WHERE Intersects(T.Trip, P.geom) 
-ORDER BY P.Id
-
-SELECT distinct c.id, t.vehicle
-FROM trips_dist t, queryperiods_ref c
-WHERE t.trip && c.period
+-- Broadcast-Join Query: For each municipality in Brussels, give the number of trips that have passed through each of them.
+------------------------------------------------------------------------------------------------------------------------------------------------------
+SELECT m.name, count(*)
+FROM trips_dist t, municipalities_ref m
+WHERE intersects(t.trip, m.geom);
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
--- Spatial kNN Query
+-- Spatial kNN Query: Finds the top 10 trajectories that are closest to the Grand Place of Brussels
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 --kNN Query:
 SELECT t.vehicle, t.day, t.seq, (trip |=| way) AS distance
-FROM trips_dist t, planet_osm_point_ref r
+FROM trips_dist t, poi_ref r
 WHERE name = 'Grand Place - Grote Markt'
 ORDER BY distance asc
 LIMIT 10;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
--- Spatiotemporal join Queries (Not supported)
+-- Spatiotemporal join Queries (Not supported): Find the pairs of trips that move close with respect to a distance 50 meters
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
+SELECT t1.vehicle, t2.vehicle
+FROM trips_dist t1, trips_dist t2
+WHERE dwithin(t1.trip, t2.trip, 50)

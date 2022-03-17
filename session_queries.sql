@@ -51,16 +51,20 @@ WHERE trip && period ('2020-06-03', '2020-06-05');
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Spatial Range Query: Which vehicle trips passed in the municipality of Evere
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
-SELECT distinct vehicle
-FROM trips_dist
-WHERE intersects(trip, 'SRID=3857;POLYGON((481332.4856234445 6586813.81152605,481332.4856234445 6588687.81152605,483206.4856234445 6588687.81152605,483206.4856234445 6586813.81152605,481332.4856234445 6586813.81152605))'::geometry);
+SELECT t.vehicle, t.day, t.seq
+FROM trips_dist t, municipalities m
+WHERE m.name like '%Evere%'
+   AND intersects(t.trip, m.geom);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Spatiotemporal Range Query: Which vehicle trips passed in the municipality of Evere during a specific period.
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
-SELECT distinct vehicle
-FROM trips_dist
-WHERE intersects(trip, 'SRID=3857;POLYGON((481332.4856234445 6586813.81152605,481332.4856234445 6588687.81152605,483206.4856234445 6588687.81152605,483206.4856234445 6586813.81152605,481332.4856234445 6586813.81152605))'::geometry);
+SELECT t.vehicle, t.day, t.seq
+FROM trips_dist t, municipalities m
+WHERE m.name like '%Evere%'
+   AND t.trip && period ('2020-06-03', '2020-06-05')
+   AND t.trip && m.geom
+   AND intersects(atPeriod(t.trip, period ('2020-06-03', '2020-06-05')) , m.geom);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Broadcast-Join Query: For each municipality in Brussels, give the number of trips that have passed through each of them.

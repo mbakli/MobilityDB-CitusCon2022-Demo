@@ -52,7 +52,7 @@ WHERE trip && period ('2020-06-03', '2020-06-05');
 -- Spatial Range Query: Which vehicle trips passed in the municipality of Evere
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
 SELECT t.vehicle, t.day, t.seq
-FROM trips_dist t, municipalities m
+FROM trips_dist t, municipalities_ref m
 WHERE m.name like '%Evere%'
    AND intersects(t.trip, m.geom);
 
@@ -60,7 +60,7 @@ WHERE m.name like '%Evere%'
 -- Spatiotemporal Range Query: Which vehicle trips passed in the municipality of Evere during a specific period.
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
 SELECT t.vehicle, t.day, t.seq
-FROM trips_dist t, municipalities m
+FROM trips_dist t, municipalities_ref m
 WHERE m.name like '%Evere%'
    AND t.trip && period ('2020-06-03', '2020-06-05')
    AND t.trip && m.geom

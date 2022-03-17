@@ -21,6 +21,7 @@ CREATE INDEX trips_dist_trip_spgist_idx on trips_dist USING spgist(trip);
 
 -- Create the referrence tables
 CREATE TABLE municipalities_ref (LIKE municipalities);
+
 INSERT INTO municipalities_ref SELECT * FROM municipalities;
 SELECT create_reference_table('municipalities_ref');
 

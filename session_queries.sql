@@ -40,13 +40,13 @@ FROM trips_dist;
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 SELECT distinct vehicle 
 FROM trips_dist
-WHERE trip && period ('2020-06-03', '2020-06-05');
+WHERE trip && period ('2020-06-03 20:00', '2020-06-03 20:30');
 
 --Query Plan:
 EXPLAIN 
 SELECT distinct vehicle 
 FROM trips_dist
-WHERE trip && period ('2020-06-03', '2020-06-05');
+WHERE trip && period ('2020-06-03 20:00', '2020-06-03 20:30');
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Spatial Range Query: Which vehicle trips passed in the municipality of Evere
@@ -62,8 +62,7 @@ WHERE m.name like '%Evere%'
 SELECT t.vehicle, t.day, t.seq
 FROM trips_dist t, municipalities_ref m
 WHERE m.name like '%Evere%'
-   AND t.trip && period ('2020-06-03', '2020-06-05')
-   AND t.trip && m.geom
+   AND t.trip && stbox(m.geom, period ('2020-06-03 20:00', '2020-06-03 20:30'))
    AND intersects(atPeriod(t.trip, period ('2020-06-03', '2020-06-05')) , m.geom);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -74,13 +73,12 @@ FROM trips_dist t, municipalities_ref m
 WHERE intersects(t.trip, m.geom);
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
--- Spatial kNN Query: Finds the top 10 trajectories that are closest to the Grand Place of Brussels
+-- Spatial kNN Query: Find the ten nearest vehicles to the Grand Place of Brussels
 ------------------------------------------------------------------------------------------------------------------------------------------------------
---kNN Query:
-SELECT t.vehicle, t.day, t.seq, (trip |=| way) AS distance
-FROM trips_dist t, poi_ref r
-WHERE name = 'Grand Place - Grote Markt'
-ORDER BY distance asc
+SELECT t.vehicle
+FROM trips_dist t, poi_ref p
+WHERE p.name = 'Grand Place - Grote Markt'
+ORDER BY (t.trip |=| p.geom) asc
 LIMIT 10;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -89,4 +87,5 @@ LIMIT 10;
 
 SELECT t1.vehicle, t2.vehicle
 FROM trips_dist t1, trips_dist t2
-WHERE dwithin(t1.trip, t2.trip, 50)
+WHERE t1.vehicle < t2.vehicle
+   AND dwithin(t1.trip, t2.trip, 50)

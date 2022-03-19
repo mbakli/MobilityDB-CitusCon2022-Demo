@@ -63,7 +63,7 @@ SELECT t.vehicle, t.day, t.seq
 FROM trips_dist t, municipalities_ref m
 WHERE m.name like '%Evere%'
    AND t.trip && stbox(m.geom, period ('2020-06-03 20:00', '2020-06-03 20:30'))
-   AND intersects(atPeriod(t.trip, period ('2020-06-03', '2020-06-05')) , m.geom);
+   AND intersects(atPeriod(t.trip, period ('2020-06-03 20:00', '2020-06-03 20:30')) , m.geom);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Broadcast-Join Query: For each municipality in Brussels, give the number of trips that have passed through each of them.

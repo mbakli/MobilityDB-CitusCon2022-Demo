@@ -51,7 +51,7 @@ WHERE trip && period ('2020-06-03 20:00', '2020-06-03 20:30');
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Spatial Range Query: Which vehicle trips passed in the municipality of Evere
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
-SELECT t.vehicle, t.day, t.seq
+SELECT distinct t.vehicle
 FROM trips_dist t, municipalities_ref m
 WHERE m.name like '%Evere%'
    AND intersects(t.trip, m.geom);
@@ -59,10 +59,10 @@ WHERE m.name like '%Evere%'
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Spatiotemporal Range Query: Which vehicle trips passed in the municipality of Evere during a specific period.
 ------------------------------------------------------------------------------------------------------------------------------------------------------   
-SELECT t.vehicle, t.day, t.seq
+SELECT distinct t.vehicle
 FROM trips_dist t, municipalities_ref m
 WHERE m.name like '%Evere%'
-   AND t.trip && stbox(m.geom, period ('2020-06-03 20:00', '2020-06-03 20:30'))
+   AND t.trip && period ('2020-06-03 20:00', '2020-06-03 20:30')
    AND intersects(atPeriod(t.trip, period ('2020-06-03 20:00', '2020-06-03 20:30')) , m.geom);
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
